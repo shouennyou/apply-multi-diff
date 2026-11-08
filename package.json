@@ -1,6 +1,6 @@
 {
-  "name": "apply-multi-diff-patche",
-  "version": "0.1.4-patche.1",
+  "name": "apply-multi-diff-patch",
+  "version": "0.1.4-patch.1",
   "description": "A zero-dependency library to apply unified diffs and search-and-replace patches, with support for fuzzy matching.",
   "type": "module",
   "main": "./dist/index.cjs",
