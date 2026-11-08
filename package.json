@@ -1,6 +1,6 @@
 {
-  "name": "apply-multi-diff",
-  "version": "0.1.4",
+  "name": "apply-multi-diff-patche",
+  "version": "0.1.4-patche.1",
   "description": "A zero-dependency library to apply unified diffs and search-and-replace patches, with support for fuzzy matching.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -20,10 +20,7 @@
     "build": "bun run scripts/update-timestamp.ts && tsup",
     "test": "bun test"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nocapro/apply-multi-diff.git"
-  },
+  "private": true,
   "keywords": [
     "diff",
     "patch",
@@ -33,10 +30,6 @@
     "fuzzy"
   ],
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/nocapro/apply-multi-diff/issues"
-  },
-  "homepage": "https://github.com/nocapro/apply-multi-diff#readme",
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "bun-types": "latest",
