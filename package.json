@@ -40,10 +40,13 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "bun-types": "latest",
-    "js-yaml": "^4.1.0",
-    "tsup": "^8.0.2"
+    "js-yaml": "^5.5.0",
+    "tsup": "^9.0.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
   }
 }

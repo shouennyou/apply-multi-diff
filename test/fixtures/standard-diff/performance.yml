@@ -93,7 +93,7 @@ apply_diff_tests:
 
         Now, we also talked about the fact that it's important to understand the business requirements and goals.
 
-So before you start building your data warehouse, you need to understand:
+        So before you start building your data warehouse, you need to understand:
 
         *   Why are you building it?
         *   What kind of questions do you want to answer?
@@ -101,65 +101,65 @@ So before you start building your data warehouse, you need to understand:
         *   What kind of data do they need?
         *   What kind of reports do they need?
 
-So once you have a clear understanding of the business requirements and goals, the next step is to design the schema.
+        So once you have a clear understanding of the business requirements and goals, the next step is to design the schema.
 
         ### Schema Design
 
-So this is where you decide how your data will be organized in the data warehouse.
+        So this is where you decide how your data will be organized in the data warehouse.
 
-And there are two main approaches to schema design for data warehouses:
+        And there are two main approaches to schema design for data warehouses:
 
-1.  **Star Schema**
-2.  **Snowflake Schema**
+        1.  **Star Schema**
+        2.  **Snowflake Schema**
 
         Now, these are very common terms in data warehousing. And if you're going to be a data engineer, you're going to be hearing these terms a lot.
 
-So it's important to understand what they are and how they differ.
+        So it's important to understand what they are and how they differ.
 
         #### Star Schema
 
-So a star schema is a simple, straightforward schema design that's commonly used in data warehouses.
+        So a star schema is a simple, straightforward schema design that's commonly used in data warehouses.
 
-It consists of:
+        It consists of:
 
         *   **a central fact table**, and
         *   **a set of dimension tables** that surround the fact table, resembling a star.
 
         ##### Fact Table
 
-So the fact table contains:
+        So the fact table contains:
 
         *   the **measures** (or facts) that you want to analyze, and
         *   the **foreign keys** that link to the dimension tables.
 
-So the measures are typically numerical values, such as:
+        So the measures are typically numerical values, such as:
 
         *   sales amount
         *   quantity
         *   profit
 
-So these are the things that you're going to be aggregating, summing up, averaging, and so on.
+        So these are the things that you're going to be aggregating, summing up, averaging, and so on.
 
         ##### Dimension Tables
 
-The dimension tables contain:
+        The dimension tables contain:
 
         *   **descriptive attributes** that provide context to the measures.
 
-So these attributes are used to:
+        So these attributes are used to:
 
         *   filter
         *   group
         *   and drill down into the data.
 
-So for example, if you have a sales fact table, your dimension tables might include:
+        So for example, if you have a sales fact table, your dimension tables might include:
 
         *   `date_dimension` (with attributes like year, quarter, month, day, day of week, etc.)
         *   `product_dimension` (with attributes like product name, category, brand, color, size, etc.)
         *   `customer_dimension` (with attributes like customer name, address, city, state, country, etc.)
         *   `store_dimension` (with attributes like store name, store type, store location, etc.)
 
-So this is what a star schema looks like. You have a central fact table, and then you have a set of dimension tables that surround it.
+        So this is what a star schema looks like. You have a central fact table, and then you have a set of dimension tables that surround it.
 
         ##### Characteristics of Star Schema
 
@@ -173,7 +173,7 @@ So this is what a star schema looks like. You have a central fact table, and the
 
         ##### When to use Star Schema
 
-Star schemas are generally preferred for:
+        Star schemas are generally preferred for:
 
         *   Simpler analytical needs.
         *   When query performance for aggregations is a top priority.
@@ -181,33 +181,33 @@ Star schemas are generally preferred for:
 
         #### Snowflake Schema
 
-A snowflake schema is an extension of the star schema.
+        A snowflake schema is an extension of the star schema.
 
-It also consists of:
+        It also consists of:
 
         *   **a central fact table**, and
         *   **a set of dimension tables**.
 
-However, in a snowflake schema, the **dimension tables are further normalized** into multiple related tables.
+        However, in a snowflake schema, the **dimension tables are further normalized** into multiple related tables.
 
-This means that a dimension table in a star schema might be split into several smaller dimension tables in a snowflake schema.
+        This means that a dimension table in a star schema might be split into several smaller dimension tables in a snowflake schema.
 
         ##### Example of Snowflake Schema
 
-Let's take our `product_dimension` example from the star schema. In a star schema, it might look like this:
+        Let's take our `product_dimension` example from the star schema. In a star schema, it might look like this:
 
-`product_dimension` (product_key, product_name, product_category, product_subcategory, brand, color, size)
+        `product_dimension` (product_key, product_name, product_category, product_subcategory, brand, color, size)
 
-In a snowflake schema, the `product_dimension` might be normalized into:
+        In a snowflake schema, the `product_dimension` might be normalized into:
 
         *   `product_dimension` (product_key, product_name, brand_key, category_key, color, size)
         *   `brand_dimension` (brand_key, brand_name, brand_description)
         *   `category_dimension` (category_key, category_name, subcategory_key)
         *   `subcategory_dimension` (subcategory_key, subcategory_name)
 
-Notice how `brand_key` and `category_key` are foreign keys in the `product_dimension` that link to their respective normalized dimension tables. And `subcategory_key` is a foreign key in `category_dimension`.
+        Notice how `brand_key` and `category_key` are foreign keys in the `product_dimension` that link to their respective normalized dimension tables. And `subcategory_key` is a foreign key in `category_dimension`.
 
-This creates a hierarchical structure for the dimensions, resembling a snowflake pattern.
+        This creates a hierarchical structure for the dimensions, resembling a snowflake pattern.
 
         ##### Characteristics of Snowflake Schema
 
@@ -221,7 +221,7 @@ This creates a hierarchical structure for the dimensions, resembling a snowflake
 
         ##### When to use Snowflake Schema
 
-Snowflake schemas are generally preferred for:
+        Snowflake schemas are generally preferred for:
 
         *   More complex analytical needs where dimensions have significant hierarchies or multiple attributes that can be normalized.
         *   When data integrity and normalization are highly important.
@@ -252,13 +252,13 @@ Snowflake schemas are generally preferred for:
 
         For most data warehousing scenarios, the star schema is a good starting point due to its simplicity and query performance benefits. The snowflake schema is typically considered when there's a strong need for data normalization or when dealing with highly hierarchical and complex dimensions.
 
-So this is all about schema design.
+        So this is all about schema design.
 
         Once you have your schema designed, the next step is to:
 
         ### Choose your Tools and Technologies
 
-So this is where you decide what kind of:
+        So this is where you decide what kind of:
 
         *   **database** you're going to use,
         *   what kind of **ETL tools** you're going to use, and
@@ -271,16 +271,16 @@ So this is where you decide what kind of:
         Some popular options include:
 
         *   **Cloud Data Warehouses:**
-    *   **Amazon Redshift:** A fully managed, petabyte-scale data warehouse service.
-    *   **Google BigQuery:** A highly scalable, serverless, and cost-effective data warehouse.
-    *   **Snowflake:** A cloud-agnostic data warehouse that offers high scalability and flexibility.
-    *   **Azure Synapse Analytics:** A unified analytics service that brings together enterprise data warehousing and Big Data analytics.
+            *   **Amazon Redshift:** A fully managed, petabyte-scale data warehouse service.
+            *   **Google BigQuery:** A highly scalable, serverless, and cost-effective data warehouse.
+            *   **Snowflake:** A cloud-agnostic data warehouse that offers high scalability and flexibility.
+            *   **Azure Synapse Analytics:** A unified analytics service that brings together enterprise data warehousing and Big Data analytics.
 
         *   **On-Premises Data Warehouses:**
-    *   **Teradata:** A powerful, high-performance relational database management system designed for data warehousing.
-    *   **Oracle Exadata:** An engineered system optimized for running Oracle Database workloads, including data warehouses.
-    *   **Microsoft SQL Server:** A relational database management system that can be used for data warehousing with its SQL Server Analysis Services (SSAS) and SQL Server Integration Services (SSIS) components.
-    *   **PostgreSQL:** An open-source relational database that can be used for smaller data warehouses or as a component in a larger data analytics architecture.
+            *   **Teradata:** A powerful, high-performance relational database management system designed for data warehousing.
+            *   **Oracle Exadata:** An engineered system optimized for running Oracle Database workloads, including data warehouses.
+            *   **Microsoft SQL Server:** A relational database management system that can be used for data warehousing with its SQL Server Analysis Services (SSAS) and SQL Server Integration Services (SSIS) components.
+            *   **PostgreSQL:** An open-source relational database that can be used for smaller data warehouses or as a component in a larger data analytics architecture.
 
         The choice of database depends on factors like:
 
@@ -303,18 +303,18 @@ So this is where you decide what kind of:
         Some popular ETL tools include:
 
         *   **Cloud-Native ETL/ELT Services:**
-    *   **AWS Glue:** A fully managed extract, transform, and load (ETL) service that makes it easy for customers to prepare and load their data for analytics.
-    *   **Azure Data Factory:** A cloud-based ETL and data integration service that allows you to create data-driven workflows for orchestrating data movement and transforming data at scale.
-    *   **Google Cloud Dataflow:** A fully managed service for executing Apache Beam pipelines, enabling both batch and stream data processing.
+            *   **AWS Glue:** A fully managed extract, transform, and load (ETL) service that makes it easy for customers to prepare and load their data for analytics.
+            *   **Azure Data Factory:** A cloud-based ETL and data integration service that allows you to create data-driven workflows for orchestrating data movement and transforming data at scale.
+            *   **Google Cloud Dataflow:** A fully managed service for executing Apache Beam pipelines, enabling both batch and stream data processing.
 
         *   **Open Source ETL Tools:**
-    *   **Apache Airflow:** A platform to programmatically author, schedule, and monitor workflows. It's often used to orchestrate ETL pipelines.
-    *   **Talend Open Studio:** An open-source data integration tool that provides a graphical interface for designing and deploying ETL jobs.
-    *   **Pentaho Data Integration (Kettle):** Another open-source ETL tool that offers a visual design environment and a wide range of connectors.
+            *   **Apache Airflow:** A platform to programmatically author, schedule, and monitor workflows. It's often used to orchestrate ETL pipelines.
+            *   **Talend Open Studio:** An open-source data integration tool that provides a graphical interface for designing and deploying ETL jobs.
+            *   **Pentaho Data Integration (Kettle):** Another open-source ETL tool that offers a visual design environment and a wide range of connectors.
 
         *   **Commercial ETL Tools:**
-    *   **Informatica PowerCenter:** A leading enterprise data integration platform.
-    *   **IBM DataStage:** A powerful ETL tool for building data integration solutions.
+            *   **Informatica PowerCenter:** A leading enterprise data integration platform.
+            *   **IBM DataStage:** A powerful ETL tool for building data integration solutions.
 
         The choice of ETL tool depends on factors like:
 
@@ -327,7 +327,7 @@ So this is where you decide what kind of:
 
         #### Business Intelligence (BI) Tools
 
-Once the data is in the data warehouse, business users need a way to access, analyze, and visualize it. This is where Business Intelligence (BI) tools come in.
+        Once the data is in the data warehouse, business users need a way to access, analyze, and visualize it. This is where Business Intelligence (BI) tools come in.
 
         BI tools allow users to:
 
@@ -354,15 +354,15 @@ Once the data is in the data warehouse, business users need a way to access, ana
         *   **Collaboration features:** How important are sharing and collaboration capabilities?
         *   **Scalability:** Can the tool handle the expected number of users and queries?
 
-So this is all about choosing your tools and technologies.
+        So this is all about choosing your tools and technologies.
 
         Once you have your tools and technologies chosen, the next step is to:
 
         ### Implement ETL Pipelines
 
-So this is where you actually build the ETL (Extract, Transform, Load) pipelines to move data from your source systems into your data warehouse.
+        So this is where you actually build the ETL (Extract, Transform, Load) pipelines to move data from your source systems into your data warehouse.
 
-This involves:
+        This involves:
 
         *   **Extracting** data from various source systems.
         *   **Transforming** the data to meet the data warehouse's schema requirements.
@@ -373,34 +373,34 @@ This involves:
         *   **Data Granularity:** Decide the level of detail you need in your data warehouse. Do you need transactional level data, or are aggregated summaries sufficient for your analytical needs?
         *   **Data Refresh Frequency:** How often does the data in the data warehouse need to be updated? This could be daily, hourly, near real-time, or even real-time, depending on business requirements.
         *   **Incremental vs. Full Loads:**
-    *   **Full Loads:** Reloading all data from a source system. Simple but resource-intensive for large datasets.
-    *   **Incremental Loads:** Only loading new or changed data since the last load. More complex to implement but highly efficient for ongoing updates. This often involves tracking timestamps, change data capture (CDC) mechanisms, or comparing checksums.
+            *   **Full Loads:** Reloading all data from a source system. Simple but resource-intensive for large datasets.
+            *   **Incremental Loads:** Only loading new or changed data since the last load. More complex to implement but highly efficient for ongoing updates. This often involves tracking timestamps, change data capture (CDC) mechanisms, or comparing checksums.
         *   **Data Quality Checks:** Implement robust data quality checks at various stages of the ETL pipeline to ensure the data loaded into the warehouse is accurate, consistent, and complete. This can include:
-    *   **Validation Rules:** Checking data types, formats, ranges, referential integrity.
-    *   **Deduplication:** Identifying and removing duplicate records.
-    *   **Completeness Checks:** Ensuring all required fields are populated.
-    *   **Consistency Checks:** Verifying that data across different sources is consistent.
+            *   **Validation Rules:** Checking data types, formats, ranges, referential integrity.
+            *   **Deduplication:** Identifying and removing duplicate records.
+            *   **Completeness Checks:** Ensuring all required fields are populated.
+            *   **Consistency Checks:** Verifying that data across different sources is consistent.
         *   **Error Handling and Logging:** Design comprehensive error handling mechanisms to gracefully manage issues during extraction, transformation, and loading. Implement detailed logging to monitor pipeline health, track data flow, and troubleshoot problems effectively.
         *   **Orchestration and Scheduling:** Use an orchestration tool (like Apache Airflow, AWS Step Functions, Azure Data Factory) to schedule and manage your ETL jobs. This ensures that pipelines run in the correct order, dependencies are met, and failures are handled.
         *   **Performance Optimization:** Optimize your ETL pipelines for performance, especially when dealing with large volumes of data. This might involve:
-    *   **Parallel Processing:** Running multiple transformation steps or data loads concurrently.
-    *   **Batch Processing:** Grouping data into batches for efficient processing.
-    *   **Indexing:** Ensuring appropriate indexes are on your data warehouse tables to speed up data loading and querying.
-    *   **Partitioning:** Dividing large tables into smaller, more manageable partitions.
+            *   **Parallel Processing:** Running multiple transformation steps or data loads concurrently.
+            *   **Batch Processing:** Grouping data into batches for efficient processing.
+            *   **Indexing:** Ensuring appropriate indexes are on your data warehouse tables to speed up data loading and querying.
+            *   **Partitioning:** Dividing large tables into smaller, more manageable partitions.
         *   **Security:** Ensure that data is secure throughout the ETL process, from source to warehouse. This includes:
-    *   **Encryption:** Encrypting data in transit and at rest.
-    *   **Access Controls:** Implementing strict access controls to ETL tools and data sources.
-    *   **Data Masking/Anonymization:** Masking or anonymizing sensitive data if required.
+            *   **Encryption:** Encrypting data in transit and at rest.
+            *   **Access Controls:** Implementing strict access controls to ETL tools and data sources.
+            *   **Data Masking/Anonymization:** Masking or anonymizing sensitive data if required.
 
         Implementing ETL pipelines is often the most complex and time-consuming part of building a data warehouse, as it involves integrating with various disparate systems and ensuring high data quality.
 
-So this is all about implementing ETL pipelines.
+        So this is all about implementing ETL pipelines.
 
         Once you have your ETL pipelines implemented, the next step is to:
 
         ### Build Reporting and Dashboards
 
-So this is where you use your BI tools to create reports and dashboards that allow business users to:
+        So this is where you use your BI tools to create reports and dashboards that allow business users to:
 
         *   Access
         *   Analyze
@@ -410,76 +410,76 @@ So this is where you use your BI tools to create reports and dashboards that all
 
         *   **Understand User Needs:** Collaborate closely with business stakeholders to understand their analytical questions, KPIs (Key Performance Indicators), and reporting requirements. This ensures that the dashboards and reports deliver actual business value.
         *   **Design for Clarity and Usability:**
-    *   **Intuitive Layouts:** Organize dashboards logically with clear titles, labels, and filters.
-    *   **Appropriate Visualizations:** Choose the right chart types (bar charts, line charts, pie charts, tables, etc.) for the data being presented to ensure clarity and avoid misinterpretation.
-    *   **Interactivity:** Enable drill-down, filtering, and sorting capabilities to allow users to explore data dynamically.
+            *   **Intuitive Layouts:** Organize dashboards logically with clear titles, labels, and filters.
+            *   **Appropriate Visualizations:** Choose the right chart types (bar charts, line charts, pie charts, tables, etc.) for the data being presented to ensure clarity and avoid misinterpretation.
+            *   **Interactivity:** Enable drill-down, filtering, and sorting capabilities to allow users to explore data dynamically.
         *   **Performance:** Design reports and dashboards to be performant. Slow-loading dashboards will frustrate users and reduce adoption. This involves:
-    *   **Efficient Queries:** Ensuring the underlying queries to the data warehouse are optimized.
-    *   **Aggregation Tables/Materialized Views:** For frequently accessed aggregated data, create pre-aggregated tables or materialized views in the data warehouse to speed up query execution.
-    *   **Caching:** Utilize caching mechanisms in the BI tool or data warehouse where appropriate.
+            *   **Efficient Queries:** Ensuring the underlying queries to the data warehouse are optimized.
+            *   **Aggregation Tables/Materialized Views:** For frequently accessed aggregated data, create pre-aggregated tables or materialized views in the data warehouse to speed up query execution.
+            *   **Caching:** Utilize caching mechanisms in the BI tool or data warehouse where appropriate.
         *   **Data Governance and Security:**
-    *   **Access Control:** Implement row-level and column-level security in the data warehouse or BI tool to ensure users only see data they are authorized to access.
-    *   **Data Definitions:** Provide clear definitions for metrics and dimensions to ensure consistent understanding across the organization.
-    *   **Version Control:** Manage different versions of reports and dashboards.
+            *   **Access Control:** Implement row-level and column-level security in the data warehouse or BI tool to ensure users only see data they are authorized to access.
+            *   **Data Definitions:** Provide clear definitions for metrics and dimensions to ensure consistent understanding across the organization.
+            *   **Version Control:** Manage different versions of reports and dashboards.
         *   **Scalability:** Ensure your reporting solution can scale as the number of users and data volume grows.
         *   **Training and Documentation:** Provide training to business users on how to use the BI tools and interpret the reports. Create comprehensive documentation for dashboards, metrics, and data sources.
         *   **Feedback Loop:** Establish a continuous feedback loop with users to iterate on and improve reports and dashboards. Business needs evolve, and reporting should evolve with them.
 
         Effective reporting and dashboards are the culmination of the data warehouse project, transforming raw data into actionable business intelligence.
 
-So this is all about building reporting and dashboards.
+        So this is all about building reporting and dashboards.
 
         Once you have your reporting and dashboards built, the next step is to:
 
         ### Maintenance and Optimization
 
-So building a data warehouse is not a one-time project. It's an ongoing process that requires continuous maintenance and optimization.
+        So building a data warehouse is not a one-time project. It's an ongoing process that requires continuous maintenance and optimization.
 
         #### Key Aspects of Maintenance and Optimization:
 
         *   **Monitoring:** Continuously monitor the data warehouse for performance, data quality, and system health. This includes monitoring:
-    *   ETL job success/failure rates and execution times.
-    *   Query performance and resource utilization (CPU, memory, disk I/O).
-    *   Data freshness and completeness.
-    *   Storage growth.
+            *   ETL job success/failure rates and execution times.
+            *   Query performance and resource utilization (CPU, memory, disk I/O).
+            *   Data freshness and completeness.
+            *   Storage growth.
         *   **Performance Tuning:** Regularly review and tune the data warehouse for optimal performance. This might involve:
-    *   **Index Optimization:** Adding, modifying, or removing indexes based on query patterns.
-    *   **Query Optimization:** Refactoring inefficient SQL queries in reports or ETL pipelines.
-    *   **Table Partitioning:** Re-evaluating and adjusting table partitioning strategies as data grows.
-    *   **Data Compaction/Vacuuming:** Performing regular maintenance tasks to reclaim space and improve query performance (e.g., in Redshift, BigQuery, Snowflake).
-    *   **Resource Scaling:** Adjusting compute and storage resources based on demand.
+            *   **Index Optimization:** Adding, modifying, or removing indexes based on query patterns.
+            *   **Query Optimization:** Refactoring inefficient SQL queries in reports or ETL pipelines.
+            *   **Table Partitioning:** Re-evaluating and adjusting table partitioning strategies as data grows.
+            *   **Data Compaction/Vacuuming:** Performing regular maintenance tasks to reclaim space and improve query performance (e.g., in Redshift, BigQuery, Snowflake).
+            *   **Resource Scaling:** Adjusting compute and storage resources based on demand.
         *   **Data Quality Management:** Proactively identify and resolve data quality issues. This could involve:
-    *   Implementing new data validation rules in ETL.
-    *   Cleaning historical data.
-    *   Establishing data governance processes.
+            *   Implementing new data validation rules in ETL.
+            *   Cleaning historical data.
+            *   Establishing data governance processes.
         *   **Schema Evolution:** As business requirements change, the data warehouse schema will likely need to evolve. This involves:
-    *   Adding new tables or columns.
-    *   Modifying existing schema elements.
-    *   Ensuring backward compatibility where necessary.
+            *   Adding new tables or columns.
+            *   Modifying existing schema elements.
+            *   Ensuring backward compatibility where necessary.
         *   **Security Updates and Access Management:** Regularly review and update security configurations, user roles, and access permissions. Ensure compliance with data privacy regulations.
         *   **Cost Management:** For cloud data warehouses, continuously monitor and optimize costs by:
-    *   Right-sizing compute resources.
-    *   Optimizing storage tiers.
-    *   Identifying and eliminating idle resources.
-    *   Leveraging reserved instances or committed use discounts.
+            *   Right-sizing compute resources.
+            *   Optimizing storage tiers.
+            *   Identifying and eliminating idle resources.
+            *   Leveraging reserved instances or committed use discounts.
         *   **Documentation:** Keep documentation up-to-date, including schema definitions, ETL logic, data lineage, and report specifications. This is crucial for onboarding new team members and troubleshooting.
         *   **User Support and Training:** Provide ongoing support to business users and offer refresher training sessions on new features or best practices for using BI tools.
         *   **Backup and Recovery:** Ensure robust backup and disaster recovery strategies are in place and regularly tested to protect against data loss.
 
         Effective maintenance and optimization ensure that the data warehouse remains a reliable, high-performing, and valuable asset for the organization over its lifecycle.
 
-So this is all about maintenance and optimization.
+        So this is all about maintenance and optimization.
 
         #### Recap of Building a Data Warehouse
 
-So let's recap the steps involved in building a data warehouse:
+        So let's recap the steps involved in building a data warehouse:
 
-1.  **Understand Business Requirements and Goals:** Why are you building it? What questions do you need to answer?
-2.  **Design the Schema:** Choose between Star Schema, Snowflake Schema, or a hybrid approach.
-3.  **Choose your Tools and Technologies:** Select your database, ETL tools, and BI tools.
-4.  **Implement ETL Pipelines:** Build the Extract, Transform, Load processes.
-5.  **Build Reporting and Dashboards:** Create visualizations and reports for business users.
-6.  **Maintenance and Optimization:** Continuously monitor, tune, and evolve the data warehouse.
+        1.  **Understand Business Requirements and Goals:** Why are you building it? What questions do you need to answer?
+        2.  **Design the Schema:** Choose between Star Schema, Snowflake Schema, or a hybrid approach.
+        3.  **Choose your Tools and Technologies:** Select your database, ETL tools, and BI tools.
+        4.  **Implement ETL Pipelines:** Build the Extract, Transform, Load processes.
+        5.  **Build Reporting and Dashboards:** Create visualizations and reports for business users.
+        6.  **Maintenance and Optimization:** Continuously monitor, tune, and evolve the data warehouse.
 
         This comprehensive approach ensures that the data warehouse effectively serves its purpose of providing actionable insights to drive business decisions.
 
@@ -508,14 +508,14 @@ So let's recap the steps involved in building a data warehouse:
 
         Often, data lakes and data warehouses are used together:
 
-1.  **Data Ingestion:** Raw data from various sources lands in the Data Lake.
-2.  **Data Processing:** Data engineers use the Data Lake to clean, transform, and prepare data for specific analytical uses.
-3.  **Data Loading:** The cleaned and transformed data is then loaded into a Data Warehouse for traditional BI and reporting.
-4.  **Advanced Analytics:** Data scientists might directly access the Data Lake for machine learning, predictive modeling, or exploring new data sources before they are structured for the warehouse.
+        1.  **Data Ingestion:** Raw data from various sources lands in the Data Lake.
+        2.  **Data Processing:** Data engineers use the Data Lake to clean, transform, and prepare data for specific analytical uses.
+        3.  **Data Loading:** The cleaned and transformed data is then loaded into a Data Warehouse for traditional BI and reporting.
+        4.  **Advanced Analytics:** Data scientists might directly access the Data Lake for machine learning, predictive modeling, or exploring new data sources before they are structured for the warehouse.
 
-This combined approach leverages the flexibility of the Data Lake for raw data storage and advanced analytics, and the performance and structure of the Data Warehouse for reliable business reporting.
+        This combined approach leverages the flexibility of the Data Lake for raw data storage and advanced analytics, and the performance and structure of the Data Warehouse for reliable business reporting.
 
-So I hope that clarifies the difference between a data lake and a data warehouse.
+        So I hope that clarifies the difference between a data lake and a data warehouse.
 
         And that brings us to the end of our episode on building a data warehouse.
 

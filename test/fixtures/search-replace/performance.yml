@@ -881,9 +881,9 @@ apply_diff_tests:
                           </p>
                         </div>
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
         >>>>>>> REPLACE
     expected:
       success: true
@@ -1240,7 +1240,6 @@ apply_diff_tests:
                           </p>
                         </div>
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-        >>>>>>> REPLACE
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>

@@ -1,7 +1,9 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/**/*.ts'],
+  // Bundle the public entry so Node can load the CJS build without resolving
+  // extensionless `.cjs` sibling imports.
+  entry: ['src/index.ts'],
   format: ['cjs', 'esm'],
   dts: true,
   splitting: false,
@@ -11,5 +13,5 @@ export default defineConfig({
   minify: false,
   target: 'es2020',
   outDir: 'dist',
-  bundle: false,
+  bundle: true,
 });

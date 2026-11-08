@@ -171,3 +171,4 @@ dist
 # relay state
 #/.relay/
 .claude
+package-lock.json

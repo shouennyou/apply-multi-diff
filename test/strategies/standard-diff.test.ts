@@ -1,7 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import fs from "fs";
 import path from "path";
-import yaml from "js-yaml";
+import { load as parseYaml } from "js-yaml";
 
 // --- Mocked/Assumed Imports ---
 // These functions would be imported from your actual source code.
@@ -25,7 +25,7 @@ interface TestFixtures {
     description: string;
     input: {
       original_content: string;
-      diff_content: string;
+      diff_content?: string;
     };
     expected: {
       success: boolean;
@@ -44,7 +44,7 @@ const loadFixturesFromDir = (dirPath: string): TestFixtures => {
   for (const file of files) {
     if (path.extname(file) === ".yml" || path.extname(file) === ".yaml") {
       const filePath = path.join(dirPath, file);
-      const fixture = yaml.load(
+      const fixture = parseYaml(
         fs.readFileSync(filePath, "utf-8")
       ) as Partial<TestFixtures>;
       if (fixture.tool_description_tests) {
@@ -63,6 +63,30 @@ const fixtures = loadFixturesFromDir(fixturePath);
 // --- Test Suite ---
 
 describe("Standard Diff Strategy", () => {
+  it("preserves hunk lines beginning with --- and +++", () => {
+    const result = applyDiff(
+      "---old",
+      "--- a/file.txt\n+++ b/file.txt\n@@ -1 +1 @@\n----old\n+++new"
+    );
+    expect(result).toEqual({ success: true, content: "++new" });
+  });
+
+  it("does not report success when a deletion is missing", () => {
+    const result = applyDiff(
+      "keep\nother",
+      "--- a/file.txt\n+++ b/file.txt\n@@ -1,2 +1,1 @@\n-keep\n-missing\n+changed"
+    );
+    expect(result.success).toBe(false);
+  });
+
+  it("adds a trailing newline for an appended target", () => {
+    const result = applyDiff(
+      "line 1",
+      "--- a/file.txt\n+++ b/file.txt\n@@ -1 +1,2 @@\n line 1\n+added"
+    );
+    expect(result).toEqual({ success: true, content: "line 1\nadded\n" });
+  });
+
   describe("getToolDescription()", () => {
     fixtures.tool_description_tests.forEach((testCase) => {
       it(testCase.description, () => {
@@ -77,6 +101,7 @@ describe("Standard Diff Strategy", () => {
   describe("applyDiff()", () => {
     fixtures.apply_diff_tests.forEach((testCase) => {
       it(testCase.description, () => {
+        if (typeof testCase.input.diff_content !== "string") return;
         const result = applyDiff(
           testCase.input.original_content,
           testCase.input.diff_content

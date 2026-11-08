@@ -63,34 +63,39 @@ type SearchReplaceBlock = { search: string; replace: string };
 
 export const _parseDiff_for_debug = (diffContent: string): SearchReplaceBlock[] | null => {
   const blocks: SearchReplaceBlock[] = [];
-  const searchMarker = /^\s*<<<<<<< SEARCH\s*$/m;
-  const replaceMarker = /^\s*>>>>>>> REPLACE\s*$/m;
+  const lines = diffContent.replace(/\r\n/g, "\n").split("\n");
+  let index = 0;
+  if (index < lines.length && !/^\s*<<<<<<< SEARCH\s*$/.test(lines[index] ?? "")) index++;
 
-  let content = diffContent;
-  const firstLineEnd = content.indexOf("\n");
-  if (firstLineEnd !== -1 && !content.substring(0, firstLineEnd).includes("<<<<<<<")) {
-    content = content.substring(firstLineEnd + 1);
-  }
-
-  while (searchMarker.test(content)) {
-    const searchStart = content.search(searchMarker);
-    const replaceEndMatch = content.match(replaceMarker);
-    if (!replaceEndMatch || typeof replaceEndMatch.index === "undefined") break;
-    
-    const replaceEnd = replaceEndMatch.index + replaceEndMatch[0].length;
-    const blockContent = content.substring(searchStart, replaceEnd);
-    
-    const parts = blockContent.split(
-      /^\s*<<<<<<< SEARCH\s*$|^\s*=======*\s*$|^\s*>>>>>>> REPLACE\s*$/m
-    );
-    
-    if (parts.length >= 4) {
-      blocks.push({
-        search: stripLineNumbers(cleanBlock(parts[1] ?? '')),
-        replace: stripLineNumbers(cleanBlock(parts[2] ?? '')),
-      });
+  while (index < lines.length) {
+    if (!/^\s*<<<<<<< SEARCH\s*$/.test(lines[index] ?? "")) {
+      index++;
+      continue;
     }
-    content = content.substring(replaceEnd);
+    index++;
+    const searchLines: string[] = [];
+    while (index < lines.length && !/^\s*={3,}\s*$/.test(lines[index] ?? "")) {
+      searchLines.push(lines[index] ?? "");
+      index++;
+    }
+    if (index >= lines.length) break;
+    index++;
+    const replaceLines: string[] = [];
+    while (index < lines.length && !/^\s*>>>>>>> REPLACE\s*$/.test(lines[index] ?? "")) {
+      replaceLines.push(lines[index] ?? "");
+      index++;
+    }
+    if (index >= lines.length) break;
+    index++;
+
+    // Add framing newlines so cleanBlock can distinguish an empty block from
+    // a block containing one blank line.
+    const cleanParsedLines = (blockLines: string[]): string =>
+      blockLines.length === 0 ? "" : cleanBlock(`\n${blockLines.join("\n")}\n`);
+    blocks.push({
+      search: stripLineNumbers(cleanParsedLines(searchLines)),
+      replace: stripLineNumbers(cleanParsedLines(replaceLines)),
+    });
   }
 
   return blocks.length > 0 ? blocks : null;
@@ -187,12 +192,13 @@ export const _findBestMatch_for_debug = (
   let bestMatchIndex = -1;
   let minDistance = Infinity;
   const searchText = searchLines.join("\n");
-  const trimmedSearchText = searchLines.map(l => l.trim()).join('\n');
+  const normalizeMatchLine = (line: string): string => line.trim().replace(/\s+\/\/.*$/, "");
+  const trimmedSearchText = searchLines.map(normalizeMatchLine).join('\n');
 
   for (let i = effectiveSearchStart; i <= maxSearchIndex; i++) {
     const slice = sourceLines.slice(i, i + searchLines.length);
     // Compare trimmed content to be indentation-agnostic
-    const trimmedSliceText = slice.map(l => l.trim()).join('\n');
+    const trimmedSliceText = slice.map(normalizeMatchLine).join('\n');
     const distance = levenshtein(trimmedSearchText, trimmedSliceText);
     if (distance < minDistance) {
       minDistance = distance;
@@ -521,7 +527,9 @@ export const applyDiff = (
     const matchEndIndex = matchStartIndex + searchLines.length;
     
     const sourceMatchBlock = sourceLines.slice(matchStartIndex, matchEndIndex).join('\n');
-    const sourceMatchIndent = getCommonIndent(sourceMatchBlock);
+    const sourceMatchIndent = searchLines.length > 200
+      ? (sourceLines[matchStartIndex]?.match(/^[ \t]*/)?.[0] ?? "")
+      : getCommonIndent(sourceMatchBlock);
 
     const replaceLines = block.replace ? block.replace.split('\n') : [];
     
@@ -535,10 +543,10 @@ export const applyDiff = (
       if (nonEmptyReplaceLines.length === 0) {
         reindentedReplaceLines = replaceLines;
       } else {
-        const replaceBaseIndent = nonEmptyReplaceLines.reduce((shortest, line) => {
-          const currentIndent = line.match(/^[ \t]*/)?.[0] || "";
-          return currentIndent.length < shortest.length ? currentIndent : shortest;
-        }, nonEmptyReplaceLines[0]?.match(/^[ \t]*/)?.[0] || "");
+        // The first replacement line anchors the block's indentation. Using
+        // the minimum indentation would incorrectly shift blocks that contain
+        // nested lines with a shallower closing brace.
+        const replaceBaseIndent = nonEmptyReplaceLines[0]?.match(/^[ \t]*/)?.[0] || "";
         
         // For each line, calculate its relative indentation and reapply with source indent
         reindentedReplaceLines = replaceLines.map(line => {
@@ -546,14 +554,14 @@ export const applyDiff = (
           
           const lineIndent = line.match(/^[ \t]*/)?.[0] || "";
           const lineContent = line.substring(lineIndent.length);
-          
-          // Calculate relative indentation beyond the base
-          let relativeIndent = "";
-          if (lineIndent.startsWith(replaceBaseIndent)) {
-            relativeIndent = lineIndent.substring(replaceBaseIndent.length);
-          }
-          
-          return sourceMatchIndent + relativeIndent + lineContent;
+
+          // Preserve both deeper and shallower indentation relative to the
+          // first replacement line.
+          const relativeIndent = lineIndent.startsWith(replaceBaseIndent)
+            ? sourceMatchIndent + lineIndent.substring(replaceBaseIndent.length)
+            : sourceMatchIndent.slice(0, Math.max(0, sourceMatchIndent.length - (replaceBaseIndent.length - lineIndent.length)));
+
+          return relativeIndent + lineContent;
         });
       }
     } else {
@@ -566,6 +574,24 @@ export const applyDiff = (
           : line;
         return sourceMatchIndent + dedentedLine;
       });
+    }
+
+    // When fuzzy matching ignores a user-added trailing comment, preserve that
+    // comment instead of deleting it along with the replaced line.
+    if (replaceLines.length === searchLines.length) {
+      for (let i = 0; i < replaceLines.length; i++) {
+        const sourceLine = sourceLines[matchStartIndex + i] ?? "";
+        const searchLine = searchLines[i] ?? "";
+        const replacementLine = reindentedReplaceLines[i] ?? "";
+        const sourceComment = sourceLine.match(/\s+\/\/.*$/)?.[0];
+        if (sourceComment && !/\/\//.test(searchLine) && !/\/\//.test(replacementLine)) {
+          reindentedReplaceLines[i] = replacementLine + sourceComment;
+        }
+      }
+    }
+
+    if (reindentedReplaceLines.at(-1) === "" && sourceLines[matchEndIndex] === "") {
+      reindentedReplaceLines.pop();
     }
 
     const newSourceLines = [

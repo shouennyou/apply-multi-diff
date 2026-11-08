@@ -1,7 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import fs from "fs";
 import path from "path";
-import yaml from "js-yaml";
+import { load as parseYaml } from "js-yaml";
 
 // --- Mocked/Assumed Imports ---
 // These functions would be imported from your actual source code.
@@ -46,7 +46,7 @@ const loadFixturesFromDir = (dirPath: string): TestFixtures => {
   for (const file of files) {
     if (path.extname(file) === ".yml" || path.extname(file) === ".yaml") {
       const filePath = path.join(dirPath, file);
-      const fixture = yaml.load(
+      const fixture = parseYaml(
         fs.readFileSync(filePath, "utf-8")
       ) as Partial<TestFixtures>;
       if (fixture.tool_description_tests) {

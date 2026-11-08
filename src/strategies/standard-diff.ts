@@ -15,6 +15,8 @@ export type Hunk = {
   lines: string[];
 };
 
+type ApplyHunkResult = string[] | null;
+
 export const getToolDescription = (cwd: string): string => {
   return `apply_diff Tool: Standard Diff Format
 
@@ -56,7 +58,9 @@ export const _parseHunks_for_debug = (diffContent: string): Hunk[] | null => {
   const fuzzyHunkHeaderRegex = /^@@ .* @@/;
 
   for (const line of lines) {
-    if (line.startsWith("---") || line.startsWith("+++")) continue;
+    // File headers are only outside hunks. Inside a hunk, `---foo` and
+    // `+++foo` are valid deletion/addition lines and must be preserved.
+    if (!currentHunk && (line.startsWith("---") || line.startsWith("+++"))) continue;
 
     const match = line.match(hunkHeaderRegex);
     if (match) {
@@ -92,7 +96,7 @@ const applyHunkAt = (
   sourceLines: readonly string[],
   hunk: Hunk,
   startIndex: number
-): string[] => {
+): ApplyHunkResult => {
   const result: string[] = [...sourceLines.slice(0, startIndex)];
   let sourceIdx = startIndex;
 
@@ -102,6 +106,8 @@ const applyHunkAt = (
       result.push(lineContent);
       continue;
     }
+
+    if (sourceIdx >= sourceLines.length) return null;
 
     // For context or deletion, find the line in the source to handle drift.
     let foundIdx = -1;
@@ -129,12 +135,34 @@ const applyHunkAt = (
       }
       sourceIdx = foundIdx + 1;
     } else {
-      // Not found nearby (fuzzy match case). Assume current line corresponds.
+      // A fuzzy context line may have been edited by the user. Preserve the
+      // current source line; deletions, however, must never be consumed when
+      // they are missing because that would report a false success.
       if (hunkLine.startsWith(" ")) {
         const line = sourceLines[sourceIdx];
-        if (line !== undefined) result.push(line);
+        if (line === undefined) return null;
+        let fuzzyIdx = -1;
+        let fuzzyDistance = Infinity;
+        for (let i = sourceIdx; i < Math.min(sourceIdx + 10, sourceLines.length); i++) {
+          const candidate = sourceLines[i] ?? "";
+          const distance = levenshtein(lineContent, candidate);
+          if (distance < fuzzyDistance) {
+            fuzzyDistance = distance;
+            fuzzyIdx = i;
+          }
+        }
+        if (fuzzyIdx > sourceIdx) result.push(...sourceLines.slice(sourceIdx, fuzzyIdx));
+        const matched = sourceLines[fuzzyIdx >= 0 ? fuzzyIdx : sourceIdx];
+        if (matched === undefined) return null;
+        result.push(matched);
+        sourceIdx = (fuzzyIdx >= 0 ? fuzzyIdx : sourceIdx) + 1;
+      } else {
+        const line = sourceLines[sourceIdx] ?? "";
+        const distance = levenshtein(lineContent, line);
+        const threshold = Math.max(1, Math.floor(Math.max(lineContent.length, line.length) * 0.35));
+        if (distance > threshold) return null;
+        sourceIdx++;
       }
-      sourceIdx++;
     }
   }
   result.push(...sourceLines.slice(sourceIdx));
@@ -167,7 +195,8 @@ export const _findAndApplyHunk_for_debug = (
   if (expectedStartIndex >= 0 && expectedStartIndex + pattern.length <= sourceLines.length) {
     const slice = sourceLines.slice(expectedStartIndex, expectedStartIndex + pattern.length);
     if (slice.join("\n") === pattern.join("\n")) {
-      return { success: true, newLines: applyHunkAt(sourceLines, hunk, expectedStartIndex) };
+      const newLines = applyHunkAt(sourceLines, hunk, expectedStartIndex);
+      if (newLines) return { success: true, newLines };
     }
   } // Fall through to fuzzy if exact match at expected pos fails
 
@@ -186,7 +215,7 @@ export const _findAndApplyHunk_for_debug = (
   let bestMatchIndex = -1;
   let minDistance = Infinity;
   const patternText = pattern.join("\n");
-  const maxDistanceThreshold = Math.floor(patternText.length * 0.20); // 20% threshold
+  const maxDistanceThreshold = Math.floor(patternText.length * 0.3); // tolerate inserted or lightly edited context
 
   // Define a search window around the expected originalStartLine
   const searchWindowStart = Math.max(
@@ -203,7 +232,8 @@ export const _findAndApplyHunk_for_debug = (
     if (pattern.length > 50) {
       const optimizedResult = findLargePatternMatch(sourceLines, pattern, searchWindowStart, Math.min(searchWindowEnd - pattern.length, sourceLines.length - pattern.length));
       if (optimizedResult) {
-        return { success: true, newLines: applyHunkAt(sourceLines, hunk, optimizedResult.index) };
+        const newLines = applyHunkAt(sourceLines, hunk, optimizedResult.index);
+        if (newLines) return { success: true, newLines };
       }
     } else {
       // Regular search for smaller patterns
@@ -218,7 +248,8 @@ export const _findAndApplyHunk_for_debug = (
       }
 
       if (bestMatchIndex !== -1 && minDistance <= maxDistanceThreshold) {
-        return { success: true, newLines: applyHunkAt(sourceLines, hunk, bestMatchIndex) };
+        const newLines = applyHunkAt(sourceLines, hunk, bestMatchIndex);
+        if (newLines) return { success: true, newLines };
       }
     }
   }
@@ -234,7 +265,8 @@ export const _findAndApplyHunk_for_debug = (
     if (pattern.length > 50) {
       const optimizedResult = findLargePatternMatch(sourceLines, pattern, 0, globalSearchCap - pattern.length);
       if (optimizedResult) {
-        return { success: true, newLines: applyHunkAt(sourceLines, hunk, optimizedResult.index) };
+        const newLines = applyHunkAt(sourceLines, hunk, optimizedResult.index);
+        if (newLines) return { success: true, newLines };
       }
     } else {
       // Regular global search for smaller patterns
@@ -249,7 +281,8 @@ export const _findAndApplyHunk_for_debug = (
       }
 
       if (bestMatchIndex !== -1 && minDistance <= maxDistanceThreshold) {
-        return { success: true, newLines: applyHunkAt(sourceLines, hunk, bestMatchIndex) };
+        const newLines = applyHunkAt(sourceLines, hunk, bestMatchIndex);
+        if (newLines) return { success: true, newLines };
       }
     }
   }
@@ -304,9 +337,12 @@ export const applyDiff = (
 
   let content = lines.join("\n");
   
-  // Handle specific case: adding content to a file that lacks a trailing newline
-  // Only add newline if the diff explicitly shows we're adding lines
-  if (!originalContent.endsWith("\n") && diffContent.includes("+line 2")) {
+  // A hunk that appends lines to a source without a trailing newline produces
+  // a newline-terminated target in the format emitted by this package.
+  const lastHunkLine = [...hunks[hunks.length - 1]!.lines].reverse().find((line) => line.length > 0);
+  const lastHunk = hunks[hunks.length - 1]!;
+  const hasContext = lastHunk.lines.some((line) => line.startsWith(" "));
+  if (!originalContent.endsWith("\n") && hasContext && lastHunkLine?.startsWith("+") && !content.endsWith("\n")) {
     content += "\n";
   }
   
