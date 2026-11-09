@@ -17,6 +17,25 @@ export type Hunk = {
 
 type ApplyHunkResult = string[] | null;
 
+export interface StandardDiffOptions {
+  /** Maximum edit distance as a fraction of the original hunk text length. */
+  matchThreshold?: number;
+  /** Maximum edit distance as a fraction of the longer deletion line. */
+  deleteThreshold?: number;
+}
+
+type ResolvedOptions = Required<StandardDiffOptions>;
+
+const resolveOptions = (options: StandardDiffOptions = {}): ResolvedOptions => {
+  const resolved = { matchThreshold: options.matchThreshold ?? 0.2, deleteThreshold: options.deleteThreshold ?? 0.2 };
+  for (const [name, value] of Object.entries(resolved)) {
+    if (!Number.isFinite(value) || value < 0 || value > 1) {
+      throw new RangeError(`${name} must be a finite number between 0 and 1`);
+    }
+  }
+  return resolved;
+};
+
 export const getToolDescription = (cwd: string): string => {
   return `apply_diff Tool: Standard Diff Format
 
@@ -95,7 +114,8 @@ export const _parseHunks_for_debug = (diffContent: string): Hunk[] | null => {
 const applyHunkAt = (
   sourceLines: readonly string[],
   hunk: Hunk,
-  startIndex: number
+  startIndex: number,
+  options: ResolvedOptions
 ): ApplyHunkResult => {
   const result: string[] = [...sourceLines.slice(0, startIndex)];
   let sourceIdx = startIndex;
@@ -159,7 +179,7 @@ const applyHunkAt = (
       } else {
         const line = sourceLines[sourceIdx] ?? "";
         const distance = levenshtein(lineContent, line);
-        const threshold = Math.max(1, Math.floor(Math.max(lineContent.length, line.length) * 0.35));
+        const threshold = options.deleteThreshold === 0 ? 0 : Math.max(1, Math.floor(Math.max(lineContent.length, line.length) * options.deleteThreshold));
         if (distance > threshold) return null;
         sourceIdx++;
       }
@@ -171,8 +191,10 @@ const applyHunkAt = (
 
 export const _findAndApplyHunk_for_debug = (
   sourceLines: readonly string[],
-  hunk: Hunk
+  hunk: Hunk,
+  options: StandardDiffOptions = {}
 ): { success: true; newLines: string[] } | { success: false } => {
+  const resolved = resolveOptions(options);
   const pattern = hunk.lines
     .filter((l) => l.startsWith(" ") || l.startsWith("-"))
     .map((l) => l.substring(1));
@@ -195,7 +217,7 @@ export const _findAndApplyHunk_for_debug = (
   if (expectedStartIndex >= 0 && expectedStartIndex + pattern.length <= sourceLines.length) {
     const slice = sourceLines.slice(expectedStartIndex, expectedStartIndex + pattern.length);
     if (slice.join("\n") === pattern.join("\n")) {
-      const newLines = applyHunkAt(sourceLines, hunk, expectedStartIndex);
+      const newLines = applyHunkAt(sourceLines, hunk, expectedStartIndex, resolved);
       if (newLines) return { success: true, newLines };
     }
   } // Fall through to fuzzy if exact match at expected pos fails
@@ -215,7 +237,7 @@ export const _findAndApplyHunk_for_debug = (
   let bestMatchIndex = -1;
   let minDistance = Infinity;
   const patternText = pattern.join("\n");
-  const maxDistanceThreshold = Math.floor(patternText.length * 0.3); // tolerate inserted or lightly edited context
+  const maxDistanceThreshold = Math.floor(patternText.length * resolved.matchThreshold);
 
   // Define a search window around the expected originalStartLine
   const searchWindowStart = Math.max(
@@ -230,9 +252,9 @@ export const _findAndApplyHunk_for_debug = (
   if (searchWindowStart < sourceLines.length - pattern.length) { // Ensure there's a valid window
     // For large patterns, use optimized search
     if (pattern.length > 50) {
-      const optimizedResult = findLargePatternMatch(sourceLines, pattern, searchWindowStart, Math.min(searchWindowEnd - pattern.length, sourceLines.length - pattern.length));
+      const optimizedResult = findLargePatternMatch(sourceLines, pattern, searchWindowStart, Math.min(searchWindowEnd - pattern.length, sourceLines.length - pattern.length), resolved.matchThreshold);
       if (optimizedResult) {
-        const newLines = applyHunkAt(sourceLines, hunk, optimizedResult.index);
+        const newLines = applyHunkAt(sourceLines, hunk, optimizedResult.index, resolved);
         if (newLines) return { success: true, newLines };
       }
     } else {
@@ -248,7 +270,7 @@ export const _findAndApplyHunk_for_debug = (
       }
 
       if (bestMatchIndex !== -1 && minDistance <= maxDistanceThreshold) {
-        const newLines = applyHunkAt(sourceLines, hunk, bestMatchIndex);
+        const newLines = applyHunkAt(sourceLines, hunk, bestMatchIndex, resolved);
         if (newLines) return { success: true, newLines };
       }
     }
@@ -263,9 +285,9 @@ export const _findAndApplyHunk_for_debug = (
   if (globalSearchCap - pattern.length >= 0) { // Ensure search cap allows for pattern length
     // For large patterns, use optimized global search
     if (pattern.length > 50) {
-      const optimizedResult = findLargePatternMatch(sourceLines, pattern, 0, globalSearchCap - pattern.length);
+      const optimizedResult = findLargePatternMatch(sourceLines, pattern, 0, globalSearchCap - pattern.length, resolved.matchThreshold);
       if (optimizedResult) {
-        const newLines = applyHunkAt(sourceLines, hunk, optimizedResult.index);
+        const newLines = applyHunkAt(sourceLines, hunk, optimizedResult.index, resolved);
         if (newLines) return { success: true, newLines };
       }
     } else {
@@ -281,7 +303,7 @@ export const _findAndApplyHunk_for_debug = (
       }
 
       if (bestMatchIndex !== -1 && minDistance <= maxDistanceThreshold) {
-        const newLines = applyHunkAt(sourceLines, hunk, bestMatchIndex);
+        const newLines = applyHunkAt(sourceLines, hunk, bestMatchIndex, resolved);
         if (newLines) return { success: true, newLines };
       }
     }
@@ -292,8 +314,10 @@ export const _findAndApplyHunk_for_debug = (
 
 export const applyDiff = (
   originalContent: string,
-  diffContent: string
+  diffContent: string,
+  options: StandardDiffOptions = {}
 ): ApplyDiffResult => {
+  const resolved = resolveOptions(options);
   const hunks = _parseHunks_for_debug(diffContent);
   if (!hunks) {
     return createErrorResult(
@@ -319,7 +343,7 @@ export const applyDiff = (
   let appliedSuccessfully = true;
 
   for (const hunk of hunks) {
-    const result = _findAndApplyHunk_for_debug(lines, hunk);
+    const result = _findAndApplyHunk_for_debug(lines, hunk, resolved);
     if (result.success) {
       lines = result.newLines;
     } else { 
@@ -354,7 +378,8 @@ const findLargePatternMatch = (
   sourceLines: readonly string[],
   pattern: readonly string[],
   searchStart: number,
-  maxSearchIndex: number
+  maxSearchIndex: number,
+  matchThreshold: number
 ): { index: number; distance: number } | null => {
   // For large patterns, use a multi-phase approach similar to search-replace optimization
   
@@ -418,9 +443,7 @@ const findLargePatternMatch = (
     return null;
   }
   
-  // Use a more lenient threshold for large patterns
-  const distanceRatio = pattern.length > 100 ? 0.4 : 0.3;
-  const maxDistanceThreshold = Math.floor(patternText.length * distanceRatio);
+  const maxDistanceThreshold = Math.floor(patternText.length * matchThreshold);
   if (minDistance > maxDistanceThreshold) {
     return null;
   }

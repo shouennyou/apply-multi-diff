@@ -107,6 +107,7 @@ apply_diff_tests:
   - name: fuzzy-match-with-actual-drift
     description: Should apply a hunk using fuzzy matching when context has drifted due to new comments
     input:
+      matchThreshold: 0.3
       original_content: |
         // User added a comment here
         class MyComponent extends React.Component {

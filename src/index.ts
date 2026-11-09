@@ -2,6 +2,7 @@ export {
   applyDiff as applyStandardDiff,
   getToolDescription as getStandardDiffToolDescription,
 } from "./strategies/standard-diff";
+export type { StandardDiffOptions } from "./strategies/standard-diff";
 export {
   applyDiff as applySearchReplace,
   getToolDescription as getSearchReplaceToolDescription,

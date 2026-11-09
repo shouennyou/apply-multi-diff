@@ -18,6 +18,7 @@ for (const [directory, apply] of [['standard-diff', applyStandardDiff], ['search
       const result = apply(input.original_content, input.diff_content, {
         start_line: input.start_line,
         end_line: input.end_line,
+        matchThreshold: input.matchThreshold,
       });
       const expected = testCase.expected;
       const ok = result.success === expected.success && (!expected.success || result.content === (expected.content ?? ''));

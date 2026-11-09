@@ -79,7 +79,22 @@ console.log(result2.success && result2.content);
 
 ## API
 
-### 1. `applyStandardDiff(originalContent, diffContent)`
+### 1. `applyStandardDiff(originalContent, diffContent, options?)`
+
+The optional `matchThreshold` and `deleteThreshold` values are finite numbers
+from 0 to 1 and default to `0.2`. `matchThreshold` limits the edit distance of
+the hunk's source text relative to its length. Large hunks use an approximate
+distance and candidate filtering. `deleteThreshold` limits the edit distance
+of each deletion line relative to the longer line; positive values allow at
+least one character of difference, while `0` requires an exact deletion line.
+Invalid values throw a `RangeError`. These settings apply to unified diffs only.
+
+```ts
+const result = applyStandardDiff(original, diff, {
+  matchThreshold: 0.3,
+  deleteThreshold: 0.1,
+});
+```
 
 Apply a standard unified diff.
 

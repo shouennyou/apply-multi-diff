@@ -26,6 +26,7 @@ interface TestFixtures {
     input: {
       original_content: string;
       diff_content?: string;
+      matchThreshold?: number;
     };
     expected: {
       success: boolean;
@@ -63,6 +64,27 @@ const fixtures = loadFixturesFromDir(fixturePath);
 // --- Test Suite ---
 
 describe("Standard Diff Strategy", () => {
+  it("applies independently configurable hunk and deletion thresholds", () => {
+    const patch = "--- a/file\n+++ b/file\n@@ -1,2 +1,2 @@\n context line\n-abcdefghij\n+replacement";
+    const source = "context line\nabcXXXghij";
+    expect(applyDiff(source, patch).success).toBe(false);
+    expect(applyDiff(source, patch, { matchThreshold: 0.1, deleteThreshold: 0.5 }).success).toBe(false);
+    expect(applyDiff(source, patch, { matchThreshold: 0.5, deleteThreshold: 0.2 }).success).toBe(false);
+    expect(applyDiff(source, patch, { matchThreshold: 0.5, deleteThreshold: 0.3 })).toEqual({ success: true, content: "context line\nreplacement\n" });
+    expect(applyDiff("context line\nabcdefghiX", patch, { matchThreshold: 1, deleteThreshold: 0 }).success).toBe(false);
+    expect(() => applyDiff(source, patch, { matchThreshold: NaN })).toThrow(RangeError);
+    expect(() => applyDiff(source, patch, { deleteThreshold: 1.1 })).toThrow(RangeError);
+  });
+
+  it("uses the configured threshold for large hunks", () => {
+    const lines = Array.from({ length: 60 }, (_, i) => `context ${i.toString().padStart(2, "0").repeat(10)}`);
+    lines[59] = "A".repeat(1000);
+    const patch = `--- a/file\n+++ b/file\n@@ -1,61 +1,61 @@\n${lines.map(line => ` ${line}`).join("\n")}\n-old value\n+new value`;
+    const source = [...lines.slice(0, 59), `${lines[59]}${"X".repeat(600)}`, "old value"].join("\n");
+    expect(applyDiff(source, patch).success).toBe(false);
+    expect(applyDiff(source, patch, { matchThreshold: 1 }).success).toBe(true);
+  });
+
   it("preserves hunk lines beginning with --- and +++", () => {
     const result = applyDiff(
       "---old",
@@ -104,7 +126,8 @@ describe("Standard Diff Strategy", () => {
         if (typeof testCase.input.diff_content !== "string") return;
         const result = applyDiff(
           testCase.input.original_content,
-          testCase.input.diff_content
+          testCase.input.diff_content,
+          { matchThreshold: testCase.input.matchThreshold }
         );
 
         expect(result.success).toBe(testCase.expected.success);
